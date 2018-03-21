@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,7 +12,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.Toast;
 
 import com.example.mohamed.moviesapp.adapter.ImageAdapter;
 import com.example.mohamed.moviesapp.model.Movie;
@@ -34,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<Movie> moviesList;
     GridView gridview;
+    final String API_KEY= "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,14 +43,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        String sortType ;
         if (new SharedPref(this).getAsc()){
-            sortType = "popularity.asc";
+            new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key="+ API_KEY);
         }else{
-            sortType = "popularity.desc";
+            new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key="+ API_KEY);
         }
-        new LongOperation().execute("http://api.themoviedb.org/3/discover/movie?sort_by="+ sortType +"&api_key=");
-
         gridview = findViewById(R.id.gridview);
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v,
