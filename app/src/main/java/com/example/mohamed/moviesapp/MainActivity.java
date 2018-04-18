@@ -2,6 +2,8 @@ package com.example.mohamed.moviesapp;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -43,11 +45,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (new SharedPref(this).getAsc()){
-            new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key="+ API_KEY);
-        }else{
-            new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key="+ API_KEY);
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = null;
+        if (cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
         }
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            if (new SharedPref(this).getAsc()) {
+                new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY);
+            } else {
+                new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY);
+            }
+        }
+
+
         gridview = findViewById(R.id.gridview);
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v,
@@ -116,23 +127,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(JSONObject jsonObject) {
             try {
-                ArrayList<Movie> movies = new ArrayList<>();
-                JSONArray result = jsonObject.getJSONArray("results");
-                int resultLength = result.length();
-                for (int c= 0 ; c< resultLength ;c++){
-                    JSONObject  row = result.getJSONObject(c);
-                    Movie movie = new Movie(row.optInt("id")
-                            ,row.optString("original_title")
-                            ,row.optString("poster_path")
-                            ,row.optString("overview")
-                            ,row.optDouble("vote_average")
-                            ,row.optString("release_date")
-                            );
-                    movies.add(movie);
+                if (jsonObject != null) {
+                    ArrayList<Movie> movies = new ArrayList<>();
+                    JSONArray result = jsonObject.getJSONArray("results");
+                    int resultLength = result.length();
+                    for (int c = 0; c < resultLength; c++) {
+                        JSONObject row = result.getJSONObject(c);
+                        Movie movie = new Movie(row.optInt("id")
+                                , row.optString("original_title")
+                                , row.optString("poster_path")
+                                , row.optString("overview")
+                                , row.optDouble("vote_average")
+                                , row.optString("release_date")
+                        );
+                        movies.add(movie);
+                    }
+                    Log.e("movieList", "Loaded");
+                    moviesList = movies;
+                    gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
                 }
-                Log.e("movieList","Loaded");
-                moviesList = movies;
-                gridview.setAdapter(new ImageAdapter(getApplicationContext(),moviesList));
             } catch (JSONException e) {
                 e.printStackTrace();
             }

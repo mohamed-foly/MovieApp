@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/review_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_margin="5sp"
+    android:layout_marginBottom="10sp">
+        <TextView
+            android:id="@+id/review_row_author"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="18sp"
+            android:textAlignment="textStart"
+            android:textColor="#798f5e"
+            android:textSize="21.5sp"
+            android:paddingTop="10sp"
+            android:paddingBottom="10sp"
+            />
+        <TextView
+            android:id="@+id/review_row_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="18sp"
+            android:textAlignment="textStart"
+            android:textColor="#41a15c"
+            android:textSize="21.5sp"
+            android:layout_marginTop="10sp"
+            android:layout_marginStart="20sp"
+            android:paddingTop="10sp"
+            android:paddingBottom="10sp"
+            />
+
+</LinearLayout>
