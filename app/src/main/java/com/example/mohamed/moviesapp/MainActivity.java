@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<Movie> moviesList;
     GridView gridview;
-    final String API_KEY= "";
+    final String API_KEY= "9fbabd5af02f8d12d6a8a625de92559b";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

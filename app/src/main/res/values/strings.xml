@@ -7,5 +7,6 @@
     <string name="save">Save</string>
     <string name="trailers">Trailers</string>
     <string name="reviews">Reviews</string>
+    <string name="favorite">Favorite</string>
 
 </resources>

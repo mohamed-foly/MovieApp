@@ -13,8 +13,12 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.mohamed.moviesapp.adapter.ReviewsAdapter;
 import com.example.mohamed.moviesapp.adapter.VideosAdapter;
@@ -38,11 +42,13 @@ public class DetailsActivity extends AppCompatActivity {
 
 //  /movie/{id}/videos
 
-    final String API_KEY= "";
+    final String API_KEY= "9fbabd5af02f8d12d6a8a625de92559b";
 
     RecyclerView VideosRecycler;
     RecyclerView ReviewsRecycler;
 
+    DatabaseHelper databaseHelper ;
+Movie movie ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,12 +56,14 @@ public class DetailsActivity extends AppCompatActivity {
         VideosRecycler = findViewById(R.id.VideosRecycler);
         ReviewsRecycler = findViewById(R.id.ReviewsRecycler);
 
+        databaseHelper = new DatabaseHelper(getApplicationContext());
 
         Bundle bundle = getIntent().getExtras();
 
         if(bundle !=null) {
             Movie movie = (Movie) bundle.get("movie");
             if (movie != null) {
+                this.movie = movie;
                 Log.e("Movie Details",movie.getOriginalTitle());
                 String imageUrl = "http://image.tmdb.org/t/p/w185/";
                 ImageView poster  = findViewById(R.id.movieposter);
@@ -84,6 +92,57 @@ public class DetailsActivity extends AppCompatActivity {
             }
         }
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.details_menu, menu);
+
+       if(databaseHelper.isFavorite(movie.getId())){
+           menu.findItem(R.id.star_btn).setChecked(true);
+           menu.findItem(R.id.star_btn).setIcon(R.drawable.ic_star);
+
+
+       }else{
+           menu.findItem(R.id.star_btn).setChecked(false);
+           menu.findItem(R.id.star_btn).setIcon(R.drawable.ic_star_border);
+
+       }
+
+
+        return super.onCreateOptionsMenu(menu);
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+
+        switch(item.getItemId()){
+            case R.id.star_btn:
+                if (item.isChecked()){
+                    item.setChecked(false);
+                    item.setIcon(R.drawable.ic_star_border);
+                    databaseHelper.deleteById(movie.getId());
+                }else{
+                    item.setChecked(true);
+                    item.setIcon(R.drawable.ic_star);
+                    if ( databaseHelper.insert(movie.getId(),
+                                    movie.getOriginalTitle(),
+                                    movie.getPosterPath(),
+                                    movie.getOverview(),
+                                    movie.getVoteAverage(),
+                                    movie.getReleaseDate()
+                            ))
+                    {
+                        Toast.makeText(this, "Added", Toast.LENGTH_SHORT).show();
+                    }else {
+                        Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                break;
+        }
+        return true;
+    }
+
 
 
 
