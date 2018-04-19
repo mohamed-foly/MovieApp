@@ -2,6 +2,7 @@ package com.example.mohamed.moviesapp;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -31,33 +32,18 @@ import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
-
+    DatabaseHelper databaseHelper;
     ArrayList<Movie> moviesList;
     GridView gridview;
     final String API_KEY= "9fbabd5af02f8d12d6a8a625de92559b";
+    boolean isFavoriteMode = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = null;
-        if (cm != null) {
-            activeNetwork = cm.getActiveNetworkInfo();
-        }
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            if (new SharedPref(this).getAsc()) {
-                new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY);
-            } else {
-                new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY);
-            }
-        }
-
+        databaseHelper = new DatabaseHelper(getApplicationContext());
+        moviesList = new ArrayList<>();
 
         gridview = findViewById(R.id.gridview);
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -71,9 +57,68 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (isFavoriteMode){
+            GetLocalData();
+        }else {
+            GetApiData();
+        }
+
+
+    }
+
+    private void GetApiData(){
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = null;
+        if (cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
+        }
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            if (new SharedPref(this).getAsc()) {
+                new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY);
+            } else {
+                new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY);
+            }
+        }else{
+            ClearGrid();
+        }
+    }
+
+    private void GetLocalData(){
+        if (moviesList != null){
+            moviesList.clear();
+        }
+        Cursor cursor = databaseHelper.getData();
+        while (cursor.moveToNext()){
+            Movie movie = new Movie(
+                    cursor.getInt(0),
+                    cursor.getString(1),
+                    cursor.getString(2),
+                    cursor.getString(3),
+                    cursor.getDouble(4),
+                    cursor.getString(5)
+            );
+
+            moviesList.add(movie);
+        }
+        cursor.close();
+        gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+    }
+
+    private void ClearGrid(){
+        moviesList.clear();
+        gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.items, menu);
+
+
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -84,6 +129,20 @@ public class MainActivity extends AppCompatActivity {
             case R.id.settings:
                 Intent i  = new Intent(this,SettingsActivity.class);
                 startActivity(i);
+                break;
+            case R.id.stars_btn:
+                if(item.isChecked()){
+                    item.setChecked(false);
+                    item.setIcon(R.drawable.ic_star);
+                    isFavoriteMode = false;
+                    GetApiData(); //clear offline Data and load From API
+
+                }else{
+                    item.setChecked(true);
+                    item.setIcon(R.drawable.ic_stars);
+                    isFavoriteMode = true;
+                    GetLocalData(); //Refresh Screen with favorites
+                }
                 break;
         }
         return true;
@@ -145,8 +204,11 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("movieList", "Loaded");
                     moviesList = movies;
                     gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+                }else {
+                    ClearGrid();
                 }
             } catch (JSONException e) {
+                ClearGrid();
                 e.printStackTrace();
             }
         }

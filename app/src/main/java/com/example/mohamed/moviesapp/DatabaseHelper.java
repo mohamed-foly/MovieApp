@@ -46,18 +46,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.rawQuery("select * from " +table_name,null);
     }
 
-    public Cursor deleteById(int id)
+   public boolean deleteById(int id)
     {
         SQLiteDatabase db = this.getWritableDatabase();
-        return db.rawQuery("delete from " +table_name +" where id = "+id ,null);
+        Cursor cursor = db.rawQuery("delete from " +table_name +" where id = "+id ,null);
+        if (cursor.getCount() > 0 ){
+            cursor.close();
+            return true;
+        }else {
+            cursor.close();
+            return false;
+        }
     }
     public boolean isFavorite(int id)
     {
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery("select * from " +table_name +" where id = "+id ,null);
         if (cursor.getCount() > 0 ){
+            cursor.close();
             return true;
         }else {
+            cursor.close();
             return false;
         }
     }
