@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.mohamed.moviesapp.R;
@@ -18,11 +19,13 @@ public class VideosAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private ArrayList<Video> videoArrayList;
 
     private final OnVideoClickListener listener;
+    private final OnShareClickListener onShareClickListener;
 
-    public VideosAdapter(Context context ,ArrayList<Video> videoArrayList ,OnVideoClickListener onVideoClickListener){
+    public VideosAdapter(Context context ,ArrayList<Video> videoArrayList ,OnVideoClickListener onVideoClickListener ,OnShareClickListener onShareClickListener){
         this.videoArrayList = videoArrayList;
         this.context  = context;
         this.listener = onVideoClickListener;
+        this.onShareClickListener = onShareClickListener;
     }
 
     @NonNull
@@ -36,6 +39,7 @@ public class VideosAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ((VideoRow)holder).name_tv.setText(videoArrayList.get(position).getName());
+
         ((VideoRow)holder).bind(videoArrayList.get(position), listener);
     }
 
@@ -47,23 +51,35 @@ public class VideosAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public class VideoRow extends RecyclerView.ViewHolder{
 
         TextView name_tv ;
+        ImageButton share_btn;
         VideoRow(View itemView) {
             super(itemView);
             name_tv = itemView.findViewById(R.id.video_row_name);
-
+            share_btn = itemView.findViewById(R.id.share_btn);
         }
-        void bind(final Video item, final OnVideoClickListener listener) {
+        void bind(final Video item, final OnVideoClickListener listener ) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     listener.OnVideoClick(item);
                 }
             });
+
+            share_btn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onShareClickListener.OnShareClick(item);
+                }
+            });
+
         }
     }
 
 
     public interface OnVideoClickListener {
         void OnVideoClick(Video item);
+    }
+    public interface OnShareClickListener {
+        void OnShareClick(Video item);
     }
 }

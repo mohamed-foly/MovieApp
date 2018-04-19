@@ -55,6 +55,21 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(i);
             }
         });
+        gridview.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TEXT, "https://www.themoviedb.org/movie/"+ moviesList.get(position).getId());
+                try {
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return false ;
+            }
+        });
+
 
 
         if (savedInstanceState != null) {

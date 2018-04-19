@@ -209,7 +209,21 @@ Movie movie ;
                             }
                         }
                     };
-                    VideosAdapter videosAdapter = new VideosAdapter(getApplicationContext(),videos , onVideoClickListener);
+
+                    VideosAdapter.OnShareClickListener onShareClickListener = new VideosAdapter.OnShareClickListener() {
+                        @Override
+                        public void OnShareClick(Video item) {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            intent.putExtra(Intent.EXTRA_TEXT, "http://www.youtube.com/watch?v=" + item.getKey());
+                            try {
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+                    VideosAdapter videosAdapter = new VideosAdapter(getApplicationContext(),videos , onVideoClickListener , onShareClickListener);
                     VideosRecycler.setAdapter(videosAdapter);
                     VideosRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
                 }
