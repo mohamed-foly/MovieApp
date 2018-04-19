@@ -42,7 +42,7 @@ public class DetailsActivity extends AppCompatActivity {
 
 //  /movie/{id}/videos
 
-    final String API_KEY= "9fbabd5af02f8d12d6a8a625de92559b";
+    final String API_KEY= "";
 
     RecyclerView VideosRecycler;
     RecyclerView ReviewsRecycler;

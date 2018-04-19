@@ -35,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
     DatabaseHelper databaseHelper;
     ArrayList<Movie> moviesList;
     GridView gridview;
-    final String API_KEY= "9fbabd5af02f8d12d6a8a625de92559b";
+    final String API_KEY= "";
+    final String STATE_STARS_KEY= "stars";
     boolean isFavoriteMode = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +55,12 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(i);
             }
         });
+
+
+        if (savedInstanceState != null) {
+            // Restore value of members from saved state
+            isFavoriteMode = savedInstanceState.getBoolean(STATE_STARS_KEY);
+        }
     }
 
     @Override
@@ -83,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }else{
             ClearGrid();
+            //GetLocalData();
         }
     }
 
@@ -117,6 +125,12 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.items, menu);
 
+        if (isFavoriteMode){
+            menu.findItem(R.id.stars_btn).setIcon(R.drawable.ic_stars);
+
+        }else{
+            menu.findItem(R.id.stars_btn).setIcon(R.drawable.ic_star);
+        }
 
 
         return super.onCreateOptionsMenu(menu);
@@ -131,14 +145,11 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(i);
                 break;
             case R.id.stars_btn:
-                if(item.isChecked()){
-                    item.setChecked(false);
+                if(isFavoriteMode){
                     item.setIcon(R.drawable.ic_star);
                     isFavoriteMode = false;
                     GetApiData(); //clear offline Data and load From API
-
                 }else{
-                    item.setChecked(true);
                     item.setIcon(R.drawable.ic_stars);
                     isFavoriteMode = true;
                     GetLocalData(); //Refresh Screen with favorites
@@ -212,6 +223,14 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean(STATE_STARS_KEY, isFavoriteMode);
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
     }
 }
 
