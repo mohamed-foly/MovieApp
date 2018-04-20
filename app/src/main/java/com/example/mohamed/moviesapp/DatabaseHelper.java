@@ -46,7 +46,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.rawQuery("select * from " +table_name,null);
     }
 
-   public boolean deleteById(int id)
+   public boolean deleteById(String id)
     {
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery("delete from " +table_name +" where id = "+id ,null);

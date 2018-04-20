@@ -1,11 +1,9 @@
 package com.example.mohamed.moviesapp;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -23,27 +21,26 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 
 
-public class MainActivity extends AppCompatActivity {
-    DatabaseHelper databaseHelper;
+public class MainActivity extends AppCompatActivity implements LongOperation.OnLoadingFinish {
     ArrayList<Movie> moviesList;
     GridView gridview;
-    final String API_KEY= "";
+    final String API_KEY= BuildConfig.THE_MOVIE_DB_API_TOKEN;
     final String STATE_STARS_KEY= "stars";
+    final String STATE_LIST_POS= "list_position";
     boolean isFavoriteMode = false;
+    FavoritesProvider favoritesProvider ;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        databaseHelper = new DatabaseHelper(getApplicationContext());
+        //databaseHelper = new DatabaseHelper(getApplicationContext());
+        favoritesProvider = new FavoritesProvider(getApplicationContext());
         moviesList = new ArrayList<>();
 
         gridview = findViewById(R.id.gridview);
@@ -75,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             // Restore value of members from saved state
             isFavoriteMode = savedInstanceState.getBoolean(STATE_STARS_KEY);
+
         }
     }
 
@@ -99,9 +97,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (activeNetwork != null && activeNetwork.isConnected()) {
             if (new SharedPref(this).getAsc()) {
-                new LongOperation().execute("http://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY);
+                new LongOperation(this).execute("http://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY);
             } else {
-                new LongOperation().execute("http://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY);
+                new LongOperation(this).execute("http://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY);
             }
         }else{
             ClearGrid();
@@ -113,20 +111,25 @@ public class MainActivity extends AppCompatActivity {
         if (moviesList != null){
             moviesList.clear();
         }
-        Cursor cursor = databaseHelper.getData();
-        while (cursor.moveToNext()){
-            Movie movie = new Movie(
-                    cursor.getInt(0),
-                    cursor.getString(1),
-                    cursor.getString(2),
-                    cursor.getString(3),
-                    cursor.getDouble(4),
-                    cursor.getString(5)
-            );
+        //Cursor cursor = databaseHelper.getData();
+        //Cursor cursor = getContentResolver().query(FavoritesProvider.CONTENT_URI,null,"*",null,null);
+        Cursor cursor = favoritesProvider.query(FavoritesProvider.CONTENT_URI,null,"*",null,null);
+        if (cursor != null) {
+            while (cursor.moveToNext()){
+                Movie movie = new Movie(
+                        cursor.getInt(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getString(3),
+                        cursor.getDouble(4),
+                        cursor.getString(5)
+                );
 
-            moviesList.add(movie);
+                moviesList.add(movie);
+            }
+            cursor.close();
         }
-        cursor.close();
+
         gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
     }
 
@@ -175,79 +178,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    @SuppressLint("StaticFieldLeak")
-    private class LongOperation extends AsyncTask<String, Void, JSONObject> {
-
-        @Override
-        protected JSONObject doInBackground(String... params) {
-            InputStream inputStream;
-            String result;
-            JSONObject jsonObject;
-            // HTTP
-            try {
-                URL mURL = new URL(params[0]);
-                HttpURLConnection conn = (HttpURLConnection) mURL.openConnection();
-                conn.setRequestMethod("GET");
-
-                inputStream = conn.getInputStream();
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream,"utf-8"),8);
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append("\n");
-                }
-                inputStream.close();
-                result = sb.toString();
-
-                jsonObject = new JSONObject(result);
-
-            } catch(Exception e) {
-                return null;
-            }
-
-            return jsonObject;
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject jsonObject) {
-            try {
-                if (jsonObject != null) {
-                    ArrayList<Movie> movies = new ArrayList<>();
-                    JSONArray result = jsonObject.getJSONArray("results");
-                    int resultLength = result.length();
-                    for (int c = 0; c < resultLength; c++) {
-                        JSONObject row = result.getJSONObject(c);
-                        Movie movie = new Movie(row.optInt("id")
-                                , row.optString("original_title")
-                                , row.optString("poster_path")
-                                , row.optString("overview")
-                                , row.optDouble("vote_average")
-                                , row.optString("release_date")
-                        );
-                        movies.add(movie);
-                    }
-                    Log.e("movieList", "Loaded");
-                    moviesList = movies;
-                    gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
-                }else {
-                    ClearGrid();
-                }
-            } catch (JSONException e) {
-                ClearGrid();
-                e.printStackTrace();
-            }
-        }
-    }
 
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(STATE_STARS_KEY, isFavoriteMode);
-        // Always call the superclass so it can save the view hierarchy state
+        savedInstanceState.putInt(STATE_LIST_POS,gridview.getFirstVisiblePosition());
+
         super.onSaveInstanceState(savedInstanceState);
     }
+
+    protected void onRestoreInstanceState(Bundle state) {
+        super.onRestoreInstanceState(state);
+
+        // Retrieve list state and list/item positions
+        if(state != null)
+            gridview.smoothScrollToPosition(state.getInt(STATE_LIST_POS));
+    }
+
+
+
+
+
+    @Override
+    public void LoadingFinished(JSONObject jsonObject) {
+        try {
+            if (jsonObject != null) {
+                ArrayList<Movie> movies = new ArrayList<>();
+                JSONArray result = jsonObject.getJSONArray("results");
+                int resultLength = result.length();
+                for (int c = 0; c < resultLength; c++) {
+                    JSONObject row = result.getJSONObject(c);
+                    Movie movie = new Movie(row.optInt("id")
+                            , row.optString("original_title")
+                            , row.optString("poster_path")
+                            , row.optString("overview")
+                            , row.optDouble("vote_average")
+                            , row.optString("release_date")
+                    );
+                    movies.add(movie);
+                }
+                Log.e("movieList", "Loaded");
+                moviesList = movies;
+                gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+            }else {
+                ClearGrid();
+            }
+        } catch (JSONException e) {
+            ClearGrid();
+            e.printStackTrace();
+        }
+    }
 }
-
-
-
