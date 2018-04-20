@@ -70,4 +70,10 @@ public class ReviewsAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public interface OnReviewClickListener {
         void OnReviewClick(Review item);
     }
+
+
+    public void swapData(ArrayList<Review> reviews) {
+        reviewArrayList = reviews;  // assign the passed-in `movies` to our `moviesList`
+        notifyDataSetChanged(); // refresh the list
+    }
 }

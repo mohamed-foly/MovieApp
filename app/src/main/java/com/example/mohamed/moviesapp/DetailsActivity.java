@@ -7,7 +7,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -42,16 +41,25 @@ public class DetailsActivity extends AppCompatActivity implements LongOperation.
     Movie movie ;
 
 
+
     LinearLayoutManager videosLinearLayoutManager;
     LinearLayoutManager reviewsLinearLayoutManager;
 
+
+    ArrayList<Video> videos ;
+    VideosAdapter videosAdapter;
+
+    ArrayList<Review> reviews;
+    ReviewsAdapter reviewsAdapter;
+
+
+    final String STATE_REVIEWS_KEY = "reviews";
+    final String STATE_VIDEOS_KEY= "videos";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_details);
-        VideosRecycler = findViewById(R.id.VideosRecycler);
         ReviewsRecycler = findViewById(R.id.ReviewsRecycler);
-        videosLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
         reviewsLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
         favoritesProvider = new FavoritesProvider(getApplicationContext());
 
@@ -73,23 +81,87 @@ public class DetailsActivity extends AppCompatActivity implements LongOperation.
                 rate.setText(String.valueOf(movie.getVoteAverage()));
                 date.setText(movie.getReleaseDate());
                 overview.setText(movie.getOverview());
-
-                ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-                NetworkInfo activeNetwork = null;
-                if (cm != null) {
-                    activeNetwork = cm.getActiveNetworkInfo();
-                }
-                if (activeNetwork != null && activeNetwork.isConnected()) {
-                    new LongOperation(this).execute("http://api.themoviedb.org/3/movie/"+ movie.getId() + "/videos?api_key="+ API_KEY);
-                    new LoadReviews(this).execute("http://api.themoviedb.org/3/movie/"+ movie.getId() + "/reviews?api_key="+ API_KEY);
-
-                }
-
-
+                setTitle(movie.getOriginalTitle());
             }
         }
+
+
+        VideosAdapter.OnVideoClickListener onVideoClickListener = new VideosAdapter.OnVideoClickListener() {
+            @Override
+            public void OnVideoClick(Video item) {
+                Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + item.getKey()));
+                Intent webIntent = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("http://www.youtube.com/watch?v=" + item.getKey()));
+                try {
+                    getApplicationContext().startActivity(appIntent);
+                } catch (ActivityNotFoundException ex) {
+                    getApplicationContext().startActivity(webIntent);
+                }
+            }
+        };
+
+        VideosAdapter.OnShareClickListener onShareClickListener = new VideosAdapter.OnShareClickListener() {
+            @Override
+            public void OnShareClick(Video item) {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TEXT, "http://www.youtube.com/watch?v=" + item.getKey());
+                try {
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        ReviewsAdapter.OnReviewClickListener onReviewClickListener  = new ReviewsAdapter.OnReviewClickListener() {
+            @Override
+            public void OnReviewClick(Review item) {
+
+            }
+        };
+
+
+
+        if (savedInstanceState != null) {
+
+            videos = savedInstanceState.getParcelableArrayList(STATE_VIDEOS_KEY);
+            reviews = savedInstanceState.getParcelableArrayList(STATE_REVIEWS_KEY);
+
+        }else{
+            videos =new ArrayList<>();
+            reviews =new ArrayList<>();
+            GetApiData();
+        }
+
+
+        //initialize videos recycler
+        VideosRecycler = findViewById(R.id.VideosRecycler);
+        videosLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
+        videosAdapter = new VideosAdapter(getApplicationContext(),videos , onVideoClickListener , onShareClickListener);
+        VideosRecycler.setAdapter(videosAdapter);
+        VideosRecycler.setLayoutManager(videosLinearLayoutManager);
+        //-------//
+
+        reviewsAdapter = new ReviewsAdapter(getApplicationContext(),reviews,onReviewClickListener );
+        ReviewsRecycler.setAdapter(reviewsAdapter);
+        ReviewsRecycler.setLayoutManager(reviewsLinearLayoutManager);
+
+
     }
 
+    private void GetApiData(){
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = null;
+        if (cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
+        }
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            new LongOperation(this).execute("http://api.themoviedb.org/3/movie/"+ movie.getId() + "/videos?api_key="+ API_KEY);
+            new LoadReviews(this).execute("http://api.themoviedb.org/3/movie/"+ movie.getId() + "/reviews?api_key="+ API_KEY);
+
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -155,37 +227,8 @@ public class DetailsActivity extends AppCompatActivity implements LongOperation.
                 }
                 Log.e("movieList", "Loaded");
 
-
-                VideosAdapter.OnVideoClickListener onVideoClickListener = new VideosAdapter.OnVideoClickListener() {
-                    @Override
-                    public void OnVideoClick(Video item) {
-                        Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + item.getKey()));
-                        Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                                Uri.parse("http://www.youtube.com/watch?v=" + item.getKey()));
-                        try {
-                            getApplicationContext().startActivity(appIntent);
-                        } catch (ActivityNotFoundException ex) {
-                            getApplicationContext().startActivity(webIntent);
-                        }
-                    }
-                };
-
-                VideosAdapter.OnShareClickListener onShareClickListener = new VideosAdapter.OnShareClickListener() {
-                    @Override
-                    public void OnShareClick(Video item) {
-                        Intent intent = new Intent(Intent.ACTION_SEND);
-                        intent.setType("text/plain");
-                        intent.putExtra(Intent.EXTRA_TEXT, "http://www.youtube.com/watch?v=" + item.getKey());
-                        try {
-                            startActivity(intent);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                };
-                VideosAdapter videosAdapter = new VideosAdapter(getApplicationContext(),videos , onVideoClickListener , onShareClickListener);
-                VideosRecycler.setAdapter(videosAdapter);
-                VideosRecycler.setLayoutManager(videosLinearLayoutManager);
+                this.videos = videos;
+                videosAdapter.swapData(videos);
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -210,61 +253,19 @@ public class DetailsActivity extends AppCompatActivity implements LongOperation.
                 }
                 Log.e("movieList", "Loaded");
 
-                ReviewsAdapter.OnReviewClickListener onReviewClickListener  = new ReviewsAdapter.OnReviewClickListener() {
-                    @Override
-                    public void OnReviewClick(Review item) {
-
-                    }
-                };
-
-                ReviewsAdapter reviewsAdapter = new ReviewsAdapter(getApplicationContext(),reviews,onReviewClickListener );
-                ReviewsRecycler.setAdapter(reviewsAdapter);
-                ReviewsRecycler.setLayoutManager(reviewsLinearLayoutManager);
+                this.reviews = reviews;
+                reviewsAdapter.swapData(reviews);
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
-
-
-
-
-
-
-
-    Parcelable mListState;
-    Parcelable mListState2;
-    final String STATE_REVIEWS_POS = "reviews_position";
-    final String STATE_LIST_POS= "list_position";
-
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
 
-        mListState = videosLinearLayoutManager.onSaveInstanceState();
-        mListState2 = reviewsLinearLayoutManager.onSaveInstanceState();
-        savedInstanceState.putParcelable(STATE_LIST_POS,mListState);
-        savedInstanceState.putParcelable(STATE_REVIEWS_POS,mListState2);
+        savedInstanceState.putParcelableArrayList(STATE_REVIEWS_KEY,reviews);
+        savedInstanceState.putParcelableArrayList(STATE_VIDEOS_KEY,videos);
         super.onSaveInstanceState(savedInstanceState);
-    }
-
-
-    protected void onRestoreInstanceState(Bundle state) {
-        super.onRestoreInstanceState(state);
-
-        if(state != null) {
-            mListState = state.getParcelable(STATE_LIST_POS);
-            mListState2 = state.getParcelable(STATE_REVIEWS_POS);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (mListState != null) {
-            videosLinearLayoutManager.onRestoreInstanceState(mListState);
-            reviewsLinearLayoutManager.onRestoreInstanceState(mListState2);
-        }
     }
 
 }

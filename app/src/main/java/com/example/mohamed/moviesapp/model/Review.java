@@ -1,25 +1,40 @@
 package com.example.mohamed.moviesapp.model;
 
 
-import java.io.Serializable;
+import android.os.Parcel;
+import android.os.Parcelable;
 
-public class Review  implements Serializable {
 
-private String author;
+public class Review  implements Parcelable {
 
-private String content;
+private String author,content,id,url;
 
-private String id;
+    public Review(String author ,String content ,String id , String url){
+        this.author  = author;
+        this.content = content;
+        this.id = id;
+        this.url =url;
+    }
+    private Review(Parcel in) {
+        author = in.readString();
+        content = in.readString();
+        id = in.readString();
+        url = in.readString();
+    }
 
-private String url;
-public Review(String author ,String content ,String id , String url){
-    this.author  = author;
-    this.content = content;
-    this.id = id;
-    this.url =url;
-}
+    public static final Creator<Review> CREATOR = new Creator<Review>() {
+        @Override
+        public Review createFromParcel(Parcel in) {
+            return new Review(in);
+        }
 
-public String getAuthor() {
+        @Override
+        public Review[] newArray(int size) {
+            return new Review[size];
+        }
+    };
+
+    public String getAuthor() {
 return author;
 }
 
@@ -51,4 +66,16 @@ public void setUrl(String url) {
 this.url = url;
 }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(author);
+        dest.writeString(content);
+        dest.writeString(id);
+        dest.writeString(url);
+    }
 }

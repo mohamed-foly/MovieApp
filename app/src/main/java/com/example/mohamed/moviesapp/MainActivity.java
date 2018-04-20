@@ -29,19 +29,17 @@ public class MainActivity extends AppCompatActivity implements LongOperation.OnL
     GridView gridview;
     final String API_KEY= BuildConfig.THE_MOVIE_DB_API_TOKEN;
     final String STATE_STARS_KEY= "stars";
-    final String STATE_LIST_POS= "list_position";
+    final String STATE_MOVIES_KEY= "movies";
     boolean isFavoriteMode = false;
     FavoritesProvider favoritesProvider ;
 
+    ImageAdapter moviesAdapter ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //databaseHelper = new DatabaseHelper(getApplicationContext());
-        favoritesProvider = new FavoritesProvider(getApplicationContext());
-        moviesList = new ArrayList<>();
 
         gridview = findViewById(R.id.gridview);
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -68,26 +66,32 @@ public class MainActivity extends AppCompatActivity implements LongOperation.OnL
         });
 
 
+        //databaseHelper = new DatabaseHelper(getApplicationContext());
+        favoritesProvider = new FavoritesProvider(getApplicationContext());
+
 
         if (savedInstanceState != null) {
-            // Restore value of members from saved state
             isFavoriteMode = savedInstanceState.getBoolean(STATE_STARS_KEY);
 
+
+            // retrieve the previously saved movie list data from the passed-in bundle
+            moviesList = savedInstanceState.getParcelableArrayList(STATE_MOVIES_KEY);
+        } else {
+            moviesList = new ArrayList<>();
+
+            // kick off the data fetching task
+            if (isFavoriteMode){
+                GetLocalData();
+            }else {
+                GetApiData();
+            }
         }
+
+        moviesAdapter = new ImageAdapter(getApplicationContext(), moviesList);
+        gridview.setAdapter(moviesAdapter);
+
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (isFavoriteMode){
-            GetLocalData();
-        }else {
-            GetApiData();
-        }
-
-
-    }
 
     private void GetApiData(){
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
@@ -130,12 +134,12 @@ public class MainActivity extends AppCompatActivity implements LongOperation.OnL
             cursor.close();
         }
 
-        gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+        moviesAdapter.swapData(moviesList);
     }
 
     private void ClearGrid(){
         moviesList.clear();
-        gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+        moviesAdapter.swapData(moviesList);
     }
 
     @Override
@@ -178,22 +182,12 @@ public class MainActivity extends AppCompatActivity implements LongOperation.OnL
     }
 
 
-
-
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(STATE_STARS_KEY, isFavoriteMode);
-        savedInstanceState.putInt(STATE_LIST_POS,gridview.getFirstVisiblePosition());
-
+        // save the movie list data
+        savedInstanceState.putParcelableArrayList(STATE_MOVIES_KEY,moviesList);
         super.onSaveInstanceState(savedInstanceState);
-    }
-
-    protected void onRestoreInstanceState(Bundle state) {
-        super.onRestoreInstanceState(state);
-
-        // Retrieve list state and list/item positions
-        if(state != null)
-            gridview.smoothScrollToPosition(state.getInt(STATE_LIST_POS));
     }
 
 
@@ -220,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements LongOperation.OnL
                 }
                 Log.e("movieList", "Loaded");
                 moviesList = movies;
-                gridview.setAdapter(new ImageAdapter(getApplicationContext(), moviesList));
+                moviesAdapter.swapData(moviesList);
             }else {
                 ClearGrid();
             }

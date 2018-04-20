@@ -51,4 +51,9 @@ public class ImageAdapter extends BaseAdapter {
         return imageView;
     }
 
+    public void swapData(ArrayList<Movie> movies) {
+        moviesList = movies;  // assign the passed-in `movies` to our `moviesList`
+        notifyDataSetChanged(); // refresh the list
+    }
+
 }

@@ -82,4 +82,10 @@ public class VideosAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public interface OnShareClickListener {
         void OnShareClick(Video item);
     }
+
+
+    public void swapData(ArrayList<Video> videos) {
+        videoArrayList = videos;  // assign the passed-in `movies` to our `moviesList`
+        notifyDataSetChanged(); // refresh the list
+    }
 }
